@@ -1,0 +1,43 @@
+version: "3.3"
+
+services:
+  bank:
+    build: .
+    environment:
+      PORT: 8085
+      DB_HOST: postgres
+      DB_PORT: 5432
+      MESSAGE_BROKER_HOST: rabbitmq
+      MESSAGE_BROKER_PORT: 5672
+      MESSAGE_BROKER_USER: admin
+      MESSAGE_BROKER_PASSWORD: 1234
+      DATABASE: db
+      DB_USERNAME: root
+      DB_PASSWORD: 1234
+      PROFILE: prod
+    ports:
+      - "8085:8085"
+    depends_on:
+      - db
+      - message-broker
+  db:
+    image: postgres
+    volumes:
+      - ./tmp/db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: bank
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 1234
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 1s
+  message-broker:
+    image: rabbitmq:3
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: 1234
+    ports:
+      - "5672:5672"
+      - "15692:15692"
