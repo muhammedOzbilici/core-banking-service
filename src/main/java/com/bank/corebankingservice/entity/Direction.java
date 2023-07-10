@@ -1,4 +1,4 @@
-package com.bank.corebankingservice.model;
+package com.bank.corebankingservice.entity;
 
 import lombok.Getter;
 

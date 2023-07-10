@@ -1,12 +1,8 @@
-package com.bank.corebankingservice.integration;
+package com.bank.corebankingservice.controller;
 
 import com.bank.corebankingservice.entity.Account;
 import com.bank.corebankingservice.model.AccountCreateRequestModel;
-import com.bank.corebankingservice.model.AccountCreateResponseModel;
 import com.bank.corebankingservice.util.TestUtil;
-import com.earl.bank.dto.CreateAccountDTO;
-import com.earl.bank.entity.Account;
-import com.earl.bank.entity.Currency;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +17,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.List;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -32,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
-public class AccountTest {
+public class AccountControllerTest {
     @Autowired
     private MockMvc mvc;
 
@@ -45,13 +40,15 @@ public class AccountTest {
     }
 
     @Test
-    public void createAccount() throws Exception {
+    public void should_create_account() throws Exception {
+        //given
         long generatedCustomerId = TestUtil.generateRandomId();
         AccountCreateRequestModel model = new AccountCreateRequestModel();
         model.setCountry("Germany");
         model.setCurrencies(List.of("EUR", "USD"));
         model.setCustomerId(generatedCustomerId);
 
+        //then
         mvc.perform(post("/api/v1/accounts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(model))
@@ -70,13 +67,15 @@ public class AccountTest {
     }
 
     @Test
-    public void getAccount() throws Exception {
+    public void should_get_account() throws Exception {
+        //given
         long generatedCustomerId = TestUtil.generateRandomId();
         AccountCreateRequestModel model = new AccountCreateRequestModel();
         model.setCountry("Germany");
         model.setCurrencies(List.of("EUR", "USD"));
         model.setCustomerId(generatedCustomerId);
 
+        //when
         MvcResult result = mvc.perform(post("/api/v1/accounts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(model))
@@ -84,9 +83,10 @@ public class AccountTest {
                 .andExpect(status().isCreated()).andReturn();
         Account createdAccount = objectMapper.readValue(result.getResponse().getContentAsString(), Account.class);
 
-        mvc.perform(get("/account/" + multiple.getAccountId()))
+        //then
+        mvc.perform(get("/api/v1/accounts/" + createdAccount.getId()))
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.customerId").value(account.getCustomerId()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.customerId").value(createdAccount.getCustomerId()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.accountId").isNotEmpty())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.balances").isNotEmpty())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.balances").hasJsonPath())

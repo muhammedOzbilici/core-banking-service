@@ -11,11 +11,11 @@ import org.springframework.stereotype.Component;
 @Aspect
 @Component
 @Slf4j
-public class AOPLogging {
+public class RabbitMQAdvice {
     private final RabbitMQSender rabbitMQSender;
 
     @Autowired
-    public AOPLogging(RabbitMQSender rabbitMQSender) {
+    public RabbitMQAdvice(RabbitMQSender rabbitMQSender) {
         this.rabbitMQSender = rabbitMQSender;
     }
 

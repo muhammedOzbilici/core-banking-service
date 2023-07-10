@@ -1,69 +1,98 @@
-package com.earl.bank.service;
+package com.bank.corebankingservice.service;
 
-import com.earl.bank.dto.CreateTransactionDTO;
-import com.earl.bank.entity.Direction;
-import com.earl.bank.entity.Transaction;
-import com.earl.bank.exception.AccountNotFoundException;
-import com.earl.bank.exception.InsufficientFundException;
-import com.earl.bank.exception.InvalidAmountException;
-import com.earl.bank.mapper.BalanceMapper;
-import com.earl.bank.mapper.TransactionMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.bank.corebankingservice.entity.Account;
+import com.bank.corebankingservice.entity.Balance;
+import com.bank.corebankingservice.entity.Transaction;
+import com.bank.corebankingservice.exception.InsufficientFundException;
+import com.bank.corebankingservice.exception.InvalidAmountException;
+import com.bank.corebankingservice.exception.InvalidDirectionException;
+import com.bank.corebankingservice.mapper.BalanceMapper;
+import com.bank.corebankingservice.mapper.TransactionMapper;
+import com.bank.corebankingservice.entity.Direction;
+import com.bank.corebankingservice.model.TransactionCreateRequestModel;
+import com.bank.corebankingservice.model.TransactionCreateResponseModel;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
-public class TransactionServiceImpl implements TransactionService {
+@Slf4j
+@RequiredArgsConstructor
+public class TransactionService {
     private final TransactionMapper transactionMapper;
     private final BalanceMapper balanceMapper;
     private final AccountService accountService;
 
-    @Autowired
-    public TransactionServiceImpl(TransactionMapper transactionMapper, BalanceMapper balanceMapper, AccountService accountService) {
-        this.transactionMapper = transactionMapper;
-        this.balanceMapper = balanceMapper;
-        this.accountService = accountService;
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    public TransactionCreateResponseModel createTransaction(TransactionCreateRequestModel request) {
+        checkAmountIsValid(request.getAmount());
+
+        checkDirectionIsValid(request.getDirection());
+
+        Account foundedAccount = accountService.getAccountWithId(request.getAccountId());
+
+        int balanceComparison = balanceMapper.getBalance(
+                request.getAccountId(),
+                request.getCurrency()
+        ).getAmount().subtract(request.getAmount()).compareTo(BigDecimal.ZERO);
+
+        if (Direction.OUT.equals(request.getDirection())) {
+            if (balanceComparison < 0) {
+                throw new InsufficientFundException("Insufficient Fund");
+            } else {
+                balanceMapper.decreaseBalance(
+                        foundedAccount.getId(),
+                        request.getCurrency(),
+                        request.getAmount()
+                );
+            }
+        } else if (Direction.IN.equals(request.getDirection())) {
+            balanceMapper.increaseBalance(
+                    foundedAccount.getId(),
+                    request.getCurrency(),
+                    request.getAmount()
+            );
+        }
+
+        Balance balance = balanceMapper.getBalance(foundedAccount.getId(), request.getCurrency());
+        Transaction newTransaction = Transaction.builder()
+                .accountId(request.getAccountId())
+                .amount(request.getAmount())
+                .currency(request.getCurrency())
+                .direction(request.getDirection().getValue())
+                .description(request.getDescription())
+                .balance(balance)
+                .createdDate(LocalDateTime.now()).
+                build();
+
+        long createdTransactionId = transactionMapper.createTransaction(newTransaction);
+        log.info("Transaction successfully created");
+        return TransactionCreateResponseModel.builder()
+                .accountId(newTransaction.getAccountId())
+                .transactionId(createdTransactionId)
+                .amount(newTransaction.getAmount())
+                .currency(newTransaction.getCurrency())
+                .direction(request.getDirection())
+                .description(request.getDescription())
+                .finalAmount(balance.getAmount())
+                .build();
     }
 
-    @Override
-    @Transactional(isolation = Isolation.SERIALIZABLE)
-    public Transaction createTransaction(CreateTransactionDTO transaction)
-            throws AccountNotFoundException, InvalidAmountException, InsufficientFundException {
-        var account = accountService.getAccount(transaction.getAccountId());
-        if (transaction.getAmount().compareTo(BigDecimal.ZERO) < 0) {
-            throw new InvalidAmountException();
+    private static void checkAmountIsValid(BigDecimal amount) {
+        if (amount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new InvalidAmountException("Invalid Amount, amount:" + amount);
         }
-        var balanceComparison = balanceMapper.getBalance(
-                transaction.getAccountId(),
-                transaction.getCurrency()
-        ).getAmount().subtract(transaction.getAmount()).compareTo(BigDecimal.ZERO);
-        if (Direction.OUT.equals(transaction.getDirection())) {
-            if (balanceComparison < 0)
-                throw new InsufficientFundException();
-            else balanceMapper.decreaseBalance(
-                    account.getAccountId(),
-                    transaction.getCurrency(),
-                    transaction.getAmount()
-            );
-        } else if (Direction.IN.equals(transaction.getDirection()))
-            balanceMapper.increaseBalance(
-                    account.getAccountId(),
-                    transaction.getCurrency(),
-                    transaction.getAmount()
-            );
-        var balance = balanceMapper.getBalance(account.getAccountId(), transaction.getCurrency());
-        var newTransaction = new Transaction(
-                transaction.getAccountId(),
-                transaction.getAmount(),
-                transaction.getCurrency(),
-                transaction.getDirection(),
-                transaction.getDescription()
-        );
-        transactionMapper.createTransaction(newTransaction);
-        newTransaction.setBalance(balance);
-        return newTransaction;
+    }
+
+    private static void checkDirectionIsValid(Direction direction) {
+        if (!List.of(Direction.IN, Direction.OUT).contains(direction)) {
+            throw new InvalidDirectionException("Invalid direction, direction:" + direction);
+        }
     }
 }

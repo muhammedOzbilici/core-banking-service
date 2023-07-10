@@ -1,20 +1,15 @@
-package com.bank.corebankingservice.entity;
+package com.bank.corebankingservice.model;
 
+import com.bank.corebankingservice.entity.Balance;
 import lombok.Builder;
 import lombok.Data;
 
-import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
 @Builder
-public class Account implements Serializable {
+public class AccountDto {
     private Long id;
     private Long customerId;
-    private String country;
     private Set<Balance> balances;
-    private int version;
-    private LocalDateTime createdDate;
-    private LocalDateTime updatedDate;
 }

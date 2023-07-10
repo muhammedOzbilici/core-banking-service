@@ -1,14 +1,20 @@
 package com.bank.corebankingservice.model;
 
+import com.bank.corebankingservice.entity.Direction;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
+import java.math.BigDecimal;
+import java.util.Currency;
 
 @Getter
 @Setter
-public class AccountCreateRequestModel {
-    private Long customerId;
-    private String country;
-    private List<String> currencies;
+@Builder
+public class TransactionCreateRequestModel {
+    private Long accountId;
+    private BigDecimal amount;
+    private Currency currency;
+    private Direction direction;
+    private String description;
 }

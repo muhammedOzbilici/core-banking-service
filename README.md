@@ -1,60 +1,20 @@
-# Bank Account Transactions Microservice
+# Core Banking Service
 
-A Bank account transactions microservice with Spring Boot, Postgres, and RabbitMQ.
-This microservice is responsible for creating user account and balances for provided currencies that are defined
-as an `enum`:
+This service is responsible for creating bank accounts with allowed currencies (EUR,SEK,GBP,USD) and their balances.
+User can make a transaction for deposit or withdraw (Direction **IN** or **OUT**) and gather those transactions with account id. 
+User also can gather account info with account id. While creating account, must be aware of that customer id and account id is unique
+per customer.
 
-```java
-public enum Currency{
-    EUR,SEK,GBP,USD
-}
-```
+Service is using Postgres as database and RabbitMq as queue. Every account events will be fired to queue named **bank-queue**.
 
-Users can **deposit** and **withdraw** money from their accounts by providing a Direction:
-
-```java
-public enum Direction {
-    IN,OUT
-}
-```
-
-All transactions will be executed with proper isolation level.
-
-## Ingredients
-
-- [Java 11](https://jdk.java.net/11/)
-- [Junit5](https://junit.org/junit5/docs/current/user-guide/)
-- [Gradle](https://gradle.org/)
-- [Spring Boot](https://spring.io/projects/spring-boot)
-- [myBATIS 3](https://mybatis.org/mybatis-3/)
-- [Postgres](https://www.postgresql.org/)
-- [RabbitMQ](https://www.rabbitmq.com/)
-- [Docker](https://www.docker.com/)
+User can dynamically change allowed currencies (defined in _.properties_ files).
 
 ## How to deploy
-
-You need to have docker installed on your machine. you can easily deploy the service with executing
-following command in your bash terminal:
 
 ```bash
 docker compose up
 ```
 
-It will create and start **database** and **message broker** services first and then it will create
-a container form the bank account microservice docker image and will bind port 8080 of the container for public use.
+### OpenApi page
 
-## How to use
-
-Hit the port 8080 for the good reasons.
-
-### API page
-
-Go to [OpenAPI](http://localhost:8080/swagger-ui/index.html) documents page and hit the endpoints.
-
-## Todo
-
-- [ ] add benchmark
-- [ ] add integration test for transactions
-- [ ] add java docs
-- [ ] add build status and test coverage to pull requests
-- [ ] add project status to readme
+Go to [OpenAPI](http://localhost:8085/api-docs)

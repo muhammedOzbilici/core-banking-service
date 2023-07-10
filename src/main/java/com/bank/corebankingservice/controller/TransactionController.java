@@ -1,40 +1,38 @@
-package com.earl.bank.controller;
+package com.bank.corebankingservice.controller;
 
-import com.earl.bank.dto.CreateTransactionDTO;
-import com.earl.bank.entity.Transaction;
-import com.earl.bank.exception.AccountNotFoundException;
-import com.earl.bank.service.AccountService;
-import com.earl.bank.service.TransactionService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import com.bank.corebankingservice.entity.Transaction;
+import com.bank.corebankingservice.model.TransactionCreateRequestModel;
+import com.bank.corebankingservice.model.TransactionCreateResponseModel;
+import com.bank.corebankingservice.service.AccountService;
+import com.bank.corebankingservice.service.TransactionService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("transaction")
+@RequestMapping("/api/v1/transactions")
+@RequiredArgsConstructor
+@ControllerAdvice
+@CrossOrigin
+@Slf4j
 public class TransactionController {
 
     private final TransactionService transactionService;
     private final AccountService accountService;
 
-    @Autowired
-    public TransactionController(TransactionService transactionService, AccountService accountService) {
-        this.transactionService = transactionService;
-        this.accountService = accountService;
-    }
-
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    Transaction createTransaction(@RequestBody CreateTransactionDTO transaction) throws AccountNotFoundException {
-        return transactionService.createTransaction(transaction);
+    public ResponseEntity<TransactionCreateResponseModel> createTransaction(@RequestBody TransactionCreateRequestModel request) {
+        return ResponseEntity.ok(transactionService.createTransaction(request));
     }
 
-    @GetMapping("{accountId}/all")
-    List<Transaction> getTransactions(
+    @GetMapping("/{accountId}")
+    public ResponseEntity<List<Transaction>> getTransactionsWithAccountId(
             @PathVariable("accountId") Long accountId,
             @RequestParam(value = "page", defaultValue = "0") Short page,
             @RequestParam(value = "size", defaultValue = "10") Short size) {
-        return accountService.getTransactions(accountId, page, size);
+        return ResponseEntity.ok(accountService.getTransactionsWithAccountId(accountId, page, size));
     }
 }

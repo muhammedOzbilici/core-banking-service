@@ -11,10 +11,12 @@ import java.util.Currency;
 @Getter
 @Setter
 @Builder
-public class TransactionCreateRequestModel {
+public class TransactionCreateResponseModel {
     private Long accountId;
+    private Long transactionId;
     private BigDecimal amount;
     private Currency currency;
     private Direction direction;
-    private String Description;
+    private String description;
+    private BigDecimal finalAmount;
 }
